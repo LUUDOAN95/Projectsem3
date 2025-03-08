@@ -1,0 +1,45 @@
+@model List<eproject3.Models.Generated.Shop>
+
+<div class="container mt-5">
+    <h1 class="mb-4">Shops at ABCD Mall</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <form method="get" class="form-inline">
+                <div class="input-group w-100">
+                    <input type="text" name="search" class="form-control" placeholder="Search shops...">
+                    <div class="input-group-append">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="row">
+        @foreach (var shop in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <img src="@(string.IsNullOrEmpty(shop.ImageUrl) ? "/images/shop-placeholder.jpg" : shop.ImageUrl)" 
+                         class="card-img-top" alt="@shop.ShopName" 
+                         style="height: 200px; object-fit: cover;">
+                    <div class="card-body">
+                        <h5 class="card-title">@shop.ShopName</h5>
+                        <p class="card-text">
+                            <span class="badge badge-info">@shop.Category</span>
+                        </p>
+                        <p class="card-text">@(shop.Description?.Length > 100 ? shop.Description.Substring(0, 100) + "..." : shop.Description)</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            No shops found. Please try a different search term.
+        </div>
+    }
+</div> 

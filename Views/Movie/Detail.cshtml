@@ -1,0 +1,277 @@
+@model eproject3.Models.Generated.Movie
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-4">
+            <img src="@Model.CoverImage" class="img-fluid rounded" alt="@Model.Title">
+        </div>
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-start">
+                <h1>@Model.Title</h1>
+            </div>
+            <p class="lead">@Model.Description</p>
+            <div class="d-flex justify-content-between my-3">
+                <div>
+                    <strong>Duration:</strong> @Model.Duration minutes
+                </div>
+                <div>
+                    <strong>Release Date:</strong> @(Model.ReleaseDate?.ToString("MM/dd/yyyy") ?? "Not specified")
+                </div>
+            </div>
+            
+            @if (!string.IsNullOrEmpty(Model.TrailerUrl))
+            {
+                <div class="embed-responsive embed-responsive-16by9 my-4">
+                    <iframe class="embed-responsive-item" 
+                            src="@GetYouTubeEmbedUrl(Model.TrailerUrl)" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen></iframe>
+                </div>
+            }
+            
+            <h3 class="mt-4">Available Showtimes</h3>
+            @if (Model.MovieShowtimes != null && Model.MovieShowtimes.Any())
+            {
+                <div id="showtimesSection" class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Today's Showtimes</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @foreach (var showtime in Model.MovieShowtimes.OrderBy(s => s.StartTime))
+                            {
+                                <div class="col-md-4 col-6 mb-3">
+                                    <a href="#" class="btn btn-outline-primary w-100 showtime-btn" 
+                                       onclick="showSeatMap(@showtime.ShowtimeId, @showtime.TicketPrice)">
+                                        @showtime.StartTime.ToString(@"hh\:mm") - @showtime.StartTime.Add(TimeSpan.FromMinutes(Model.Duration ?? 0)).ToString(@"hh\:mm")
+                                        <div class="small">Hall: @showtime.HallNumber</div>
+                                        <div class="small">Price: @((showtime.TicketPrice * 100).ToString("N0")) VND</div>
+                                        <div class="small">Available: @showtime.AvailableSeats seats</div>
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="seatMapContainer" class="mt-4" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h4>Select Your Seat</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-center mb-3">
+                                    <div class="screen bg-dark text-white text-center p-2 rounded" style="width: 80%;">SCREEN</div>
+                                </div>
+                                <div class="seat-map" id="seatMap">
+                                    <!-- Seats will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-4 col-6">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="seat available me-2"></div>
+                                        <span>Available</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-6">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="seat booked me-2"></div>
+                                        <span>Booked</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="seat selected me-2"></div>
+                                        <span>Selected</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <form id="bookingForm" asp-controller="Booking" asp-action="ProcessPayment" method="post" class="mt-4">
+                                <input type="hidden" id="showtimeId" name="ShowtimeId" />
+                                <input type="hidden" id="seatId" name="SeatId" />
+                                
+                                <div class="form-group mb-3">
+                                    <label for="customerName">Name</label>
+                                    <input type="text" class="form-control" id="customerName" name="CustomerName" required>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="email">Email</label>
+                                    <input type="email" class="form-control" id="email" name="Email" required>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="phone">Phone</label>
+                                    <input type="tel" class="form-control" id="phone" name="Phone" required>
+                                </div>
+                                
+                                <div class="booking-summary mb-3" style="display: none;">
+                                    <h5>Booking Summary</h5>
+                                    <p><strong>Movie:</strong> @Model.Title</p>
+                                    <p><strong>Seat:</strong> <span id="selectedSeatCode">Not selected</span></p>
+                                    <p><strong>Price:</strong> <span id="ticketPrice">0</span> VND</p>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary" disabled id="bookButton">
+                                    Book Now
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    No showtimes currently available for this movie. Please check back later.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+.screen {
+    margin-bottom: 20px;
+}
+.seat-map {
+    display: grid;
+    grid-template-columns: repeat(10, 40px);
+    gap: 10px;
+    justify-content: center;
+    margin: 20px 0;
+}
+.seat {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+.seat.available { 
+    background: #90EE90; 
+    cursor: pointer;
+}
+.seat.available:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+.seat.booked { 
+    background: #FFB6C1; 
+    cursor: not-allowed; 
+    opacity: 0.7;
+}
+.seat.selected { 
+    background: #87CEEB; 
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+.booking-summary {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+</style>
+
+<script>
+    let currentPrice = 0;
+    
+    function showSeatMap(showtimeId, price) {
+        document.getElementById('showtimeId').value = showtimeId;
+        document.getElementById('seatMapContainer').style.display = 'block';
+        currentPrice = price;
+        
+        // Reset the form
+        document.getElementById('bookingForm').reset();
+        document.getElementById('bookButton').disabled = true;
+        document.querySelector('.booking-summary').style.display = 'none';
+        
+        // In a real application, you would fetch the seats for the specific showtime via AJAX
+        // For now, let's just display some dummy seats
+        const seatMap = document.getElementById('seatMap');
+        seatMap.innerHTML = '';
+        
+        // Create some sample seats
+        for (let i = 1; i <= 30; i++) {
+            const seat = document.createElement('div');
+            seat.className = 'seat ' + (Math.random() > 0.3 ? 'available' : 'booked');
+            seat.dataset.seatId = i;
+            seat.dataset.seatCode = 'S' + i;
+            seat.textContent = 'S' + i;
+            
+            if (!seat.classList.contains('booked')) {
+                seat.addEventListener('click', function() {
+                    // Deselect any previously selected seat
+                    document.querySelectorAll('.seat.selected').forEach(s => {
+                        s.classList.remove('selected');
+                    });
+                    
+                    // Select this seat
+                    this.classList.add('selected');
+                    document.getElementById('seatId').value = this.dataset.seatId;
+                    document.getElementById('selectedSeatCode').textContent = this.dataset.seatCode;
+                    document.getElementById('ticketPrice').textContent = (currentPrice * 100).toLocaleString('vi-VN');
+                    document.querySelector('.booking-summary').style.display = 'block';
+                    
+                    // Enable the book button
+                    document.getElementById('bookButton').disabled = false;
+                });
+            }
+            
+            seatMap.appendChild(seat);
+        }
+        
+        // Scroll to the seat map
+        document.getElementById('seatMapContainer').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Form validation
+    document.getElementById('bookingForm').addEventListener('submit', function(e) {
+        const name = document.getElementById('customerName').value;
+        const email = document.getElementById('email').value;
+        const phone = document.getElementById('phone').value;
+        const seatId = document.getElementById('seatId').value;
+        
+        if (!name || !email || !phone || !seatId) {
+            e.preventDefault();
+            alert('Please fill in all required fields and select a seat.');
+        }
+    });
+</script>
+
+@functions {
+    private string GetYouTubeEmbedUrl(string url)
+    {
+        if (string.IsNullOrEmpty(url)) return "";
+        
+        // Handle different YouTube URL formats
+        string videoId = "";
+        
+        if (url.Contains("youtu.be/"))
+        {
+            videoId = url.Split("youtu.be/").Last().Split('?').First();
+        }
+        else if (url.Contains("youtube.com/watch"))
+        {
+            var uri = new Uri(url);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            videoId = query["v"];
+        }
+        else if (url.Contains("youtube.com/embed/"))
+        {
+            videoId = url.Split("youtube.com/embed/").Last().Split('?').First();
+        }
+        
+        return $"https://www.youtube.com/embed/{videoId}";
+    }
+}

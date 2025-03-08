@@ -1,0 +1,48 @@
+﻿<!-- Views/Home/Index.cshtml -->
+@model eproject3.Models.HomeViewModel
+
+<div class="mall-hero">
+    <img src="/Users/luudoan/Documents/eproject3/images/mall-front.jpg" alt="Mall View">
+    <div class="mall-info">
+        <h1>ABCD Mall</h1>
+        <p>250,000 sq ft shopping paradise</p>
+    </div>
+</div>
+
+<div class="features">
+    <a asp-controller="Shop" asp-action="Index">Shops</a>
+    <a asp-controller="Movie" asp-action="Index">Movies</a>
+    <a asp-controller="Gallery" asp-action="Index">Gallery</a>
+    <a asp-controller="Feedback" asp-action="Index">Feedback</a>
+</div>
+
+<div class="featured-shops">
+    <h2>Featured Shops</h2>
+    <div class="shop-grid">
+        @foreach (var shop in Model.FeaturedShops)
+        {
+            <div class="shop-card">
+                <img src="@shop.ImageUrl" alt="@shop.ShopName">
+                <h3>@shop.ShopName</h3>
+                <p>@shop.Category</p>
+                <p>@shop.Description</p>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="latest-movies">
+    <h2>Latest Movies</h2>
+    <div class="movie-grid">
+        @foreach (var movie in Model.LatestMovies)
+        {
+            <div class="movie-card">
+                <img src="@movie.CoverImage" alt="@movie.Title">
+                <h3>@movie.Title</h3>
+                <p>Release Date: @(movie.ReleaseDate?.ToString("MM/dd/yyyy") ?? "Not specified")</p>
+                <p>Duration: @movie.Duration minutes</p>
+                <a asp-controller="Movie" asp-action="Detail" asp-route-id="@movie.MovieId" class="btn btn-primary mt-2">View Details</a>
+            </div>
+        }
+    </div>
+</div>

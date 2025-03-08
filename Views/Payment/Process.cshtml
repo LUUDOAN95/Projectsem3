@@ -1,0 +1,117 @@
+@model eproject3.Controllers.PaymentViewModel
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Payment Details</h3>
+                </div>
+                <div class="card-body">
+                    <div class="booking-summary mb-4">
+                        <h4>Booking Summary</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Movie:</strong> @Model.MovieTitle</p>
+                                <p><strong>Date:</strong> @Model.ShowtimeDate.ToString("MM/dd/yyyy")</p>
+                                <p><strong>Time:</strong> @Model.ShowtimeTime.ToString(@"hh\:mm")</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Seat:</strong> @Model.SeatCode</p>
+                                <p><strong>Amount:</strong> @((Model.Amount * 100).ToString("N0")) VND</p>
+                            </div>
+                        </div>
+                        <hr />
+                    </div>
+
+                    <div class="payment-methods mb-4">
+                        <h4>Payment Method</h4>
+                        <div class="vnpay-info">
+                            <img src="https://sandbox.vnpayment.vn/paymentv2/Images/brands/logo.svg" alt="VNPAY" height="40" class="mb-3">
+                            <p class="text-muted">You will be redirected to VNPAY's secure payment gateway to complete your payment.</p>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                For testing, you can use these cards:
+                                <ul class="mb-0 mt-2">
+                                    <li>Card number: 9704198526191432198</li>
+                                    <li>Name: NGUYEN VAN A</li>
+                                    <li>Expiry: 07/15</li>
+                                    <li>OTP: 123456</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form asp-action="ProcessPayment" method="post">
+                        <input type="hidden" asp-for="BookingId" />
+                        <input type="hidden" asp-for="MovieTitle" />
+                        <input type="hidden" asp-for="ShowtimeDate" />
+                        <input type="hidden" asp-for="ShowtimeTime" />
+                        <input type="hidden" asp-for="SeatCode" />
+                        <input type="hidden" asp-for="Amount" />
+                        <input type="hidden" asp-for="CustomerName" />
+                        <input type="hidden" asp-for="Email" />
+                        <input type="hidden" asp-for="Phone" />
+
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-credit-card"></i> Pay with VNPAY - @((Model.Amount * 100).ToString("N0")) VND
+                            </button>
+                            <a href="@Url.Action("Detail", "Movie", new { id = 1 })" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .booking-summary {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+    }
+    .vnpay-info {
+        text-align: center;
+        padding: 20px;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Format card number with spaces
+        document.getElementById('cardNumber').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\s/g, '');
+            if (value.length > 16) value = value.substr(0, 16);
+            let formattedValue = '';
+            for (let i = 0; i < value.length; i++) {
+                if (i > 0 && i % 4 === 0) formattedValue += ' ';
+                formattedValue += value[i];
+            }
+            e.target.value = formattedValue;
+        });
+
+        // Format expiry date
+        document.getElementById('expiryDate').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 4) value = value.substr(0, 4);
+            if (value.length > 2) {
+                value = value.substr(0, 2) + '/' + value.substr(2);
+            }
+            e.target.value = value;
+        });
+
+        // Format CVV
+        document.getElementById('cvv').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 4) value = value.substr(0, 4);
+            e.target.value = value;
+        });
+    </script>
+} 

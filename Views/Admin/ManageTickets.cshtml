@@ -1,0 +1,247 @@
+@model IEnumerable<eproject3.Models.Generated.MovieShowtime>
+
+@{
+    ViewData["Title"] = "Manage Showtimes & Tickets";
+}
+
+<div class="container mt-4">
+    <h1>Manage Showtimes & Tickets</h1>
+    
+    <div class="mb-3">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addShowtimeModal">
+            Add New Showtime
+        </button>
+    </div>
+    
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Movie</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Hall</th>
+                <th>Price</th>
+                <th>Available Seats</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var showtime in Model)
+            {
+                <tr>
+                    <td>@showtime.ShowtimeId</td>
+                    <td>@showtime.Movie?.Title</td>
+                    <td>@showtime.ShowDate.ToString("MM/dd/yyyy")</td>
+                    <td>@(showtime.StartTime.ToString(@"hh\:mm") + (showtime.StartTime.Hours < 12 ? " AM" : " PM"))</td>
+                    <td>@showtime.HallNumber</td>
+                    <td>$@showtime.TicketPrice</td>
+                    <td>@showtime.AvailableSeats</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-primary edit-showtime-btn" 
+                                    data-id="@showtime.ShowtimeId" 
+                                    data-movie-id="@showtime.MovieId" 
+                                    data-date="@showtime.ShowDate.ToString("yyyy-MM-dd")" 
+                                    data-time="@showtime.StartTime.ToString(@"HH\:mm")"
+                                    data-hall="@showtime.HallNumber"
+                                    data-price="@showtime.TicketPrice"
+                                    data-seats="@showtime.AvailableSeats"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editShowtimeModal">
+                                Edit
+                            </button>
+                            <form asp-action="DeleteShowtime" method="post" style="display: inline;">
+                                <input type="hidden" name="id" value="@showtime.ShowtimeId" />
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this showtime?');">
+                                    Delete
+                                </button>
+                            </form>
+                            <a href="javascript:void(0);" class="btn btn-sm btn-info view-bookings-btn" 
+                               data-id="@showtime.ShowtimeId"
+                               data-bs-toggle="modal" 
+                               data-bs-target="#viewBookingsModal">
+                                Bookings
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Showtime Modal -->
+<div class="modal fade" id="addShowtimeModal" tabindex="-1" aria-labelledby="addShowtimeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="AddShowtime" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addShowtimeModalLabel">Add New Showtime</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="movieId" class="form-label">Movie</label>
+                        <select class="form-select" id="movieId" name="movieId" required>
+                            <option value="">Select Movie</option>
+                            @foreach (var movie in ViewBag.Movies ?? new List<eproject3.Models.Generated.Movie>())
+                            {
+                                <option value="@movie.MovieId">@movie.Title</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="showDate" class="form-label">Show Date</label>
+                        <input type="date" class="form-control" id="showDate" name="showDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="startTime" class="form-label">Start Time</label>
+                        <input type="time" class="form-control" id="startTime" name="startTime" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="hallNumber" class="form-label">Hall Number</label>
+                        <input type="number" class="form-control" id="hallNumber" name="hallNumber" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ticketPrice" class="form-label">Ticket Price ($)</label>
+                        <input type="number" class="form-control" id="ticketPrice" name="ticketPrice" step="0.01" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="availableSeats" class="form-label">Available Seats</label>
+                        <input type="number" class="form-control" id="availableSeats" name="availableSeats" min="1" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Showtime Modal -->
+<div class="modal fade" id="editShowtimeModal" tabindex="-1" aria-labelledby="editShowtimeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="EditShowtime" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editShowtimeModalLabel">Edit Showtime</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editShowtimeId" name="showtimeId">
+                    <div class="mb-3">
+                        <label for="editMovieId" class="form-label">Movie</label>
+                        <select class="form-select" id="editMovieId" name="movieId" required>
+                            <option value="">Select Movie</option>
+                            @foreach (var movie in ViewBag.Movies ?? new List<eproject3.Models.Generated.Movie>())
+                            {
+                                <option value="@movie.MovieId">@movie.Title</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editShowDate" class="form-label">Show Date</label>
+                        <input type="date" class="form-control" id="editShowDate" name="showDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStartTime" class="form-label">Start Time</label>
+                        <input type="time" class="form-control" id="editStartTime" name="startTime" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editHallNumber" class="form-label">Hall Number</label>
+                        <input type="number" class="form-control" id="editHallNumber" name="hallNumber" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editTicketPrice" class="form-label">Ticket Price ($)</label>
+                        <input type="number" class="form-control" id="editTicketPrice" name="ticketPrice" step="0.01" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAvailableSeats" class="form-label">Available Seats</label>
+                        <input type="number" class="form-control" id="editAvailableSeats" name="availableSeats" min="1" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Bookings Modal -->
+<div class="modal fade" id="viewBookingsModal" tabindex="-1" aria-labelledby="viewBookingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewBookingsModalLabel">Bookings for Showtime</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="bookingsTable">
+                    <!-- Bookings will be loaded here -->
+                    <p class="text-center">Loading bookings...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle edit showtime button clicks
+            document.querySelectorAll('.edit-showtime-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Fill the edit modal with data from data attributes
+                    document.getElementById('editShowtimeId').value = this.getAttribute('data-id');
+                    document.getElementById('editMovieId').value = this.getAttribute('data-movie-id');
+                    document.getElementById('editShowDate').value = this.getAttribute('data-date');
+                    document.getElementById('editStartTime').value = this.getAttribute('data-time');
+                    document.getElementById('editHallNumber').value = this.getAttribute('data-hall');
+                    document.getElementById('editTicketPrice').value = this.getAttribute('data-price');
+                    document.getElementById('editAvailableSeats').value = this.getAttribute('data-seats');
+                });
+            });
+            
+            // Handle view bookings button clicks
+            document.querySelectorAll('.view-bookings-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const showtimeId = this.getAttribute('data-id');
+                    loadBookings(showtimeId);
+                });
+            });
+            
+            function loadBookings(showtimeId) {
+                // In a real implementation, you would fetch the data from the server
+                // For now, we'll just show a placeholder
+                document.getElementById('bookingsTable').innerHTML = `
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Booking ID</th>
+                                <th>Customer</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Seats</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7" class="text-center">No bookings found for this showtime.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            }
+        });
+    </script>
+} 
